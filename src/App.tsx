@@ -341,13 +341,7 @@ export default function App() {
       const health = await fetch("/api/health")
         .then((r) => r.json())
         .catch(() => null);
-      if (
-        health?.configured &&
-        saved.modelFingerprint &&
-        saved.modelFingerprint !== health.fingerprint
-      )
-        a.reset();
-      else a.restore(saved);
+      a.restore(saved);
       refreshList();
     } catch {
       setStorageError("切换会话读取失败。");
@@ -398,13 +392,7 @@ export default function App() {
       setSelf(saved.self);
       setOther(saved.other);
       setRelation(saved.relation);
-      if (
-        health?.configured &&
-        saved.modelFingerprint &&
-        saved.modelFingerprint !== health.fingerprint
-      )
-        a.reset();
-      else a.restore(saved);
+      a.restore(saved);
     };
     Promise.all([
       migrateFromIdb(),

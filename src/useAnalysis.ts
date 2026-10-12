@@ -287,17 +287,7 @@ export function useAnalysis() {
       if (rev.current !== revision) return;
       fingerprint = health.fingerprint;
       llm = health.engine === "llm";
-      if (modelRef.current !== fingerprint) {
-        base.current = null;
-        savedLines.current = {};
-        savedEvents.current = {};
-        processed.current = 0;
-        setLines({});
-        setEvents({});
-        setTrend([]);
-        setOverview(null);
-        setAnalyzedCount(0);
-      }
+      // 模型变更（如本地/云端切换）不再清空已有分析：旧结果保留，新分析用新模型继续。
       modelRef.current = fingerprint;
       setModelFingerprint(fingerprint);
     } catch (e) {

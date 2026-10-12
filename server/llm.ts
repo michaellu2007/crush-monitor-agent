@@ -218,7 +218,7 @@ export async function evaluateLlm(
 ) {
   const local = new AbortController();
   const requestSignal = AbortSignal.any([
-    AbortSignal.timeout(180000),
+    AbortSignal.timeout(config.timeoutMs ?? 180000),
     local.signal,
     ...(signal ? [signal] : []),
   ]);

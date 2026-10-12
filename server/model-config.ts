@@ -24,6 +24,7 @@ export type LlmConfig = {
   apiKey: string;
   protocol: "openai" | "anthropic";
   jsonMode: boolean;
+  timeoutMs?: number;
 };
 export type ActiveConfig = ProviderConfig | LlmConfig;
 export const modelConfigPath = resolve(
@@ -161,6 +162,7 @@ export function judgeConfig(): LlmConfig | null {
       apiKey: j.apiKey || "local",
       protocol: "openai",
       jsonMode: true,
+      timeoutMs: 600000,
     };
   } catch {
     return null;
