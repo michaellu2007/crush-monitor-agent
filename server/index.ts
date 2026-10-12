@@ -298,5 +298,6 @@ server.on("error", (err: NodeJS.ErrnoException) => {
   const url = `http://127.0.0.1:${port}/`;
   console.log("crush-monitor 已在运行，为你打开页面。");
   openBrowser(url);
-  process.exit(0);
+  // 异步 spawn 需要时间；立即 exit 会把浏览器的启动一起杀掉
+  setTimeout(() => process.exit(0), 800);
 });
