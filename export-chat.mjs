@@ -7,10 +7,11 @@ import { DatabaseSync } from "node:sqlite";
 import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import "dotenv/config"; // 直接用 node 跑，需自己加载 .env（见 .env.example）
 
-const ROOT = process.env.WX_DB_ROOT || "D:/crush-monitor-1.2.0/wechat-decrypted2/db_storage";
-const OUT = "D:/crush-monitor-1.2.0/chats";
-const SELF = "wxid_496mtppr3ug922"; // 本机微信账号
+const ROOT = process.env.WX_DB_ROOT || join(process.cwd(), "wechat-decrypted2", "db_storage");
+const OUT = join(process.cwd(), "chats");
+const SELF = process.env.WX_SELF_ID || ""; // 本机微信账号，配置在 .env，不入库
 const md5 = (s) => createHash("md5").update(s).digest("hex");
 
 const open = (p) => new DatabaseSync(p, { readOnly: true });

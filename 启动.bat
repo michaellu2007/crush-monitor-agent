@@ -1,5 +1,6 @@
 @echo off
-cd /d D:\crush-monitor-1.2.0
+rem 切到本 bat 所在目录，克隆到任何路径都能直接双击运行
+cd /d "%~dp0"
 if not exist node_modules (
   echo Installing dependencies, please wait...
   call npm ci || (echo npm ci failed & pause & exit /b 1)
@@ -10,4 +11,4 @@ if not exist dist\index.html (
 )
 title crush-monitor
 call npm start
-pause
+if errorlevel 1 pause

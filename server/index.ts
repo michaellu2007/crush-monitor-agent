@@ -24,6 +24,7 @@ import {
 } from "./conv-store";
 import { listChats, getChat, refresh } from "./wechat";
 import { ProviderError, providerErrorMessage } from "./provider";
+import { claim, held, release } from "./page-lock";
 const app = express();
 app.disable("x-powered-by");
 initStorage();
@@ -101,6 +102,27 @@ app.get("/api/meta/last-conv", (_req, res) => {
 app.put("/api/meta/last-conv", (req, res) => {
   if (typeof req.body?.lastConvId === "string" && req.body.lastConvId.length <= 120)
     setLastConvId(req.body.lastConvId);
+  res.json({ ok: true });
+});
+// 单页面锁：第二个页面拿到 409 后只显示提示、不挂载应用(见 src/main.tsx)。
+app.get("/api/page", (_req, res) => {
+  res.json({ held: held() });
+});
+app.post("/api/page", (req, res) => {
+  const token = String(req.body?.token ?? "");
+  if (!/^[\w-]{1,64}$/.test(token)) {
+    res.status(400).json({ error: "无效的页面令牌" });
+    return;
+  }
+  if (req.body?.release) {
+    release(token);
+    res.json({ ok: true });
+    return;
+  }
+  if (!claim(token)) {
+    res.status(409).json({ held: true });
+    return;
+  }
   res.json({ ok: true });
 });
 app.get("/api/health", (_req, res) => {
@@ -266,6 +288,11 @@ app.use(
 const port = Number(process.env.PORT || 3178);
 const host = process.env.HOST || "127.0.0.1";
 
+const profileDir = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "../data/chrome-profile",
+);
+
 function openBrowser(url: string) {
   if (process.env.CRUSH_OPEN_BROWSER === "0") return;
   if (process.platform === "win32") {
@@ -275,14 +302,42 @@ function openBrowser(url: string) {
       join(process.env["ProgramFiles(x86)"] ?? "", "Google/Chrome/Application/chrome.exe"),
       join(process.env.LOCALAPPDATA ?? "", "Google/Chrome/Application/chrome.exe"),
     ].find((p) => p && existsSync(p));
-    if (chrome) execFile(chrome, [url], () => {});
+    // --app + 独立 profile：无地址栏/标签页的独立窗口(像桌面应用),也不会混进用户日常浏览的 Chrome 窗口
+    if (chrome)
+      execFile(
+        chrome,
+        [
+          `--app=${url}`,
+          `--user-data-dir=${profileDir}`,
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--window-size=1280,900",
+        ],
+        () => {},
+      );
     else execFile("rundll32", ["url.dll,FileProtocolHandler", url], () => {});
   } else {
     execFile(process.platform === "darwin" ? "open" : "xdg-open", [url], () => {});
   }
 }
 
-// 单实例：端口被占用时视为已在运行，直接打开页面后退出，不再崩出堆栈。
+// 把已打开的应用窗口调到前台(按页面标题开头匹配);找不到窗口时返回 false。
+function focusWindow(): Promise<boolean> {
+  if (process.platform !== "win32") return Promise.resolve(false);
+  return new Promise((resolve) => {
+    execFile(
+      "powershell",
+      [
+        "-NoProfile",
+        "-Command",
+        "(New-Object -ComObject WScript.Shell).AppActivate('好感监控器')",
+      ],
+      (err, stdout) => resolve(!err && stdout.trim().toLowerCase() === "true"),
+    );
+  });
+}
+
+// 单实例：端口被占用时视为已在运行——已有活页面就把它调到前台,页面早关掉了才补开一个。
 const server = app.listen(port, host, () => {
   const url = `http://127.0.0.1:${port}/`;
   openBrowser(url);
@@ -297,8 +352,18 @@ const server = app.listen(port, host, () => {
 server.on("error", (err: NodeJS.ErrnoException) => {
   if (err.code !== "EADDRINUSE") throw err;
   const url = `http://127.0.0.1:${port}/`;
-  console.log("crush-monitor 已在运行，为你打开页面。");
-  openBrowser(url);
+  console.log("crush-monitor 已在运行。");
+  if (process.env.CRUSH_OPEN_BROWSER !== "0")
+    // ponytail: 等 2s 只为吸收"另一实例刚启动、页面还没认领"的双击竞态,极端手速仍可能多开一个被锁页面
+    setTimeout(() => {
+      fetch(`http://127.0.0.1:${port}/api/page`)
+        .then((r) => r.json() as Promise<{ held?: boolean }>)
+        .then((j) => (j.held ? focusWindow() : Promise.resolve(false)))
+        .then((focused) => {
+          if (!focused) openBrowser(url);
+        })
+        .catch(() => openBrowser(url));
+    }, 2000);
   // 异步 spawn 需要时间；立即 exit 会把浏览器的启动一起杀掉
-  setTimeout(() => process.exit(0), 800);
+  setTimeout(() => process.exit(0), 3500);
 });

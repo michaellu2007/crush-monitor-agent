@@ -2,12 +2,12 @@
 import { DatabaseSync } from "node:sqlite";
 import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-const ROOT =
-  process.env.WX_DB_ROOT ?? "D:/crush-monitor-1.2.0/wechat-decrypted2/db_storage";
-const SELF = "wxid_496mtppr3ug922";
+// 解密库根目录与本机 wxid 都从 .env 读（见 .env.example），仓库里不留个人信息
+const ROOT = process.env.WX_DB_ROOT ?? join(process.cwd(), "wechat-decrypted2", "db_storage");
+const SELF = process.env.WX_SELF_ID ?? "";
 const md5 = (s: string) => createHash("md5").update(s).digest("hex");
 
 function open(p: string) {
@@ -191,26 +191,59 @@ export function getChat(user: string): ImportMessage[] {
     };
   });
 }
-// Re-run chatlog decrypt so newly received messages land in the snapshot.
-// Key/dataDir come from wechat-import.json ({ "key", "dataDir" }) or env.
+// 密钥只存在于登录中的微信进程内存里：用 chatlog 的掩码提取补丁自动获取。
+// 提取失败（微信没开）时回退到 wechat-import.json 里保存的旧密钥。
+function findDataDir(): string | null {
+  const base = join(process.env.USERPROFILE ?? "", "Documents", "xwechat_files");
+  if (!existsSync(base)) return null;
+  for (const name of readdirSync(base)) {
+    const p = join(base, name, "db_storage", "session", "session.db");
+    if (existsSync(p)) return join(base, name);
+  }
+  return null;
+}
 function importConfig() {
   try {
     const c = JSON.parse(readFileSync(join(process.cwd(), "wechat-import.json"), "utf8"));
-    return { key: process.env.WX_KEY ?? c.key ?? "", dataDir: process.env.WX_DATA_DIR ?? c.dataDir ?? "" };
+    return { key: c.key ?? "", dataDir: c.dataDir ?? "" };
   } catch {
     return { key: process.env.WX_KEY ?? "", dataDir: process.env.WX_DATA_DIR ?? "" };
   }
 }
-export function refresh(): Promise<void> {
+function extractKey(): Promise<string> {
   const exe = join(process.cwd(), "chatlog.exe");
   if (!existsSync(exe)) return Promise.reject(new Error("chatlog.exe 不存在"));
-  const { key, dataDir } = importConfig();
-  if (!key || !dataDir)
-    return Promise.reject(
-      new Error("缺少解密配置：请在 wechat-import.json 中填写 key 和 dataDir。"),
-    );
-  const workDir = join(ROOT, "..", "..");
   return new Promise((resolve, reject) => {
+    execFile(exe, ["key"], { timeout: 240000 }, (err, stdout) => {
+      const m = String(stdout ?? "").match(/Data Key:\s*\[([0-9a-fA-F]+)\]/);
+      if (m) return resolve(m[1]);
+      reject(new Error(err ? "密钥提取失败：" + err.message : "未能从微信进程提取密钥（微信未登录或刚启动？请等 10 秒重试）"));
+    });
+  });
+}
+export async function refresh(): Promise<void> {
+  const exe = join(process.cwd(), "chatlog.exe");
+  if (!existsSync(exe)) throw new Error("chatlog.exe 不存在");
+  const cfg = importConfig();
+  const dataDir = cfg.dataDir || findDataDir() || "";
+  if (!dataDir) throw new Error("未找到微信数据目录（xwechat_files）");
+  // 微信在登录状态 → 自动从进程内存提取最新密钥；失败再用保存的旧密钥
+  let key = "";
+  try {
+    key = await extractKey();
+    if (key !== cfg.key && cfg.dataDir !== dataDir) {
+      writeFileSync(
+        join(process.cwd(), "wechat-import.json"),
+        JSON.stringify({ key, dataDir }, null, 2),
+        "utf8",
+      );
+    }
+  } catch {
+    if (!cfg.key) throw new Error("微信未登录，无法自动提取密钥。请登录微信后重试。");
+    key = cfg.key;
+  }
+  const workDir = join(ROOT, "..", "..");
+  await new Promise<void>((resolve, reject) => {
     execFile(
       exe,
       [
