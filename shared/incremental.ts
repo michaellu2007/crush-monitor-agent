@@ -1,4 +1,5 @@
 import { boundedContext, relevantEvents, type MemoryEvent } from "./memory";
+import { buildAnalysisUnits } from "./segments";
 import type { Message, Relation, LineResult, AnalysisRequest } from "./types";
 export function incrementalJobs(
   messages: Message[],
@@ -42,7 +43,12 @@ export function incrementalJobs(
         });
     }
 
-  for (let start = 0; start < messages.length;) {
+  // 只分析最近的活跃单元（体量自适应）；更早单元属历史，用分段回溯分析
+  const units = buildAnalysisUnits(messages);
+  const recentStart = units.length
+    ? messages.length - units.at(-1)!.messages.length
+    : 0;
+  for (let start = recentStart; start < messages.length;) {
     let end = start,
       chars = 0;
     while (end < messages.length && end - start < 10) {

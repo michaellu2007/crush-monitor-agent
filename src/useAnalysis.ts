@@ -16,7 +16,7 @@ import {
   type AnalysisResponse,
 } from "../shared/types";
 import type { SavedConversation, Trend } from "./storage";
-import { buildSegments } from "../shared/segments";
+import { buildAnalysisUnits } from "../shared/segments";
 const pause = (ms: number, signal: AbortSignal) =>
   new Promise<void>((resolve, reject) => {
     const timer = setTimeout(done, ms);
@@ -130,7 +130,7 @@ export function useAnalysis() {
       }
       return;
     }
-    const chunks = buildSegments(messages);
+    const chunks = buildAnalysisUnits(messages);
     const points: {
       label: string;
       count: number;

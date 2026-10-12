@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildSegments, parseTs, humanGap } from "../shared/segments";
+import { buildAnalysisUnits, parseTs, humanGap } from "../shared/segments";
 import type { Message } from "../shared/types";
 
 let n = 0;
@@ -27,27 +27,28 @@ test("humanGap buckets coarse intervals", () => {
   assert.equal(humanGap(90 * 86400000), "3个月");
 });
 
-test("buildSegments groups by month and caps chunk size", () => {
-  const messages = [
-    msg("一", "2023年7月4日 10:00"),
-    msg("二", "2023年7月4日 10:01"),
-    msg("三", null), // 无时间戳跟随上一条所在月份
-    msg("四", "2026年3月23日 18:05"),
-    msg("五", "2026年3月23日 18:19"),
+test("buildAnalysisUnits: 稀疏期跨大停顿合并（两个月 10 条 = 一个单元）", () => {
+  const messages: Message[] = [
+    ...Array.from({ length: 5 }, (_, i) => msg("七月" + i, "2026年7月1日 12:00")),
+    ...Array.from({ length: 5 }, (_, i) => msg("八月" + i, "2026年8月11日 12:00")),
   ];
-  const segments = buildSegments(messages);
-  assert.deepEqual(
-    segments.map((s) => s.label),
-    ["2023年7月", "2026年3月"],
-  );
-  assert.equal(segments[0].messages.length, 3);
+  const units = buildAnalysisUnits(messages);
+  assert.equal(units.length, 1);
+  assert.equal(units[0].messages.length, messages.length);
 });
 
-test("buildSegments splits oversized months", () => {
-  const messages = Array.from({ length: 250 }, (_, i) =>
-    msg("x".repeat(50), "2025年6月1日 10:00"),
+test("buildAnalysisUnits: 密集期按容量切分", () => {
+  const messages: Message[] = [];
+  for (let i = 0; i < 250; i++)
+    messages.push(msg("x".repeat(50), "2026年10月11日 10:00"));
+  const units = buildAnalysisUnits(messages);
+  assert.ok(units.length >= 2);
+  for (const u of units) assert.ok(u.messages.length <= 120);
+});
+
+test("buildAnalysisUnits: 无时间戳消息不切分", () => {
+  const units = buildAnalysisUnits(
+    Array.from({ length: 50 }, (_, i) => msg("hi", null)),
   );
-  const segments = buildSegments(messages);
-  assert.ok(segments.length >= 3);
-  assert.ok(segments.every((s) => s.messages.length <= 120));
+  assert.equal(units.length, 1);
 });

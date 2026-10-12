@@ -53,6 +53,7 @@ import {
 import { exampleText } from "../shared/fixtures";
 import { useAnalysis } from "./useAnalysis";
 import { currentAction } from "../shared/action";
+import { buildAnalysisUnits } from "../shared/segments";
 
 function Modal({
   title,
@@ -529,6 +530,13 @@ export default function App() {
       setModelOpen(true);
       return;
     }
+    const units = buildAnalysisUnits(ms);
+    const skipped = ms.length - (units.at(-1)?.messages.length ?? 0);
+    if (skipped > 0)
+      setNotice(
+        `本次聚焦最近的活跃期（${units.at(-1)?.messages.length ?? 0} 条）；更早的 ${skipped} 条属历史时期，可用好感度弹窗里的「按月回溯」分析`,
+      );
+    else setNotice("");
     a.run(ms, relation, notes, relationCustom);
   }
   function add(ms: Message[], mode: "auto" | "append" | "skip" = "auto") {
