@@ -1,0 +1,37 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+artifacts/
+
+.runtime/
+
+# ---- 本地数据与隐私（绝不上传）----
+chats/
+data/
+wechat-decrypted/
+wechat-decrypted2/
+wechat-import.json
+*.log
+
+# ---- 模型与工具链（大文件）----
+*.gguf
+*.zip
+go/
+chatlog.exe
+alpha-bin/
+chatlog-src/
+chatlog_win/
+chatlog_full/
+chatlog_official/
+chatlog_alpha*.zip
+wechat-log.tar.gz
+chatlog_full.tar.gz
+chatlog_official.tar.gz
+dl-ollama.sh
+masked-key.patch
+
+# ---- 个人笔记与冗余副本 ----
+10.12plan.txt
+App.original.tsx
