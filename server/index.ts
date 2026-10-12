@@ -63,6 +63,7 @@ app.get("/api/conversations", (_req, res) => {
     conversations.push({
       id,
       other: s.other,
+      contactId: s.contactId,
       relation: s.relation,
       at: s.messages.at(-1)?.timestamp ?? "",
       count: s.messages.length,

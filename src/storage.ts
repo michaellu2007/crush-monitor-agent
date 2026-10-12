@@ -18,10 +18,12 @@ export type SavedConversation = {
   completed: boolean;
   notes?: string;
   relationLabel?: string;
+  contactId?: string;
 };
 export type ConversationSummary = {
   id: string;
   other: string;
+  contactId?: string;
   relation: Relation;
   at: string;
   count: number;

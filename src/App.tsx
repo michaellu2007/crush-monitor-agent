@@ -146,6 +146,7 @@ export default function App() {
   const [ready, setReady] = useState(false),
     [storageError, setStorageError] = useState("");
   const convId = useRef("current");
+  const contactRef = useRef("");
   const [notes, setNotes] = useState("");
   const [relationCustom, setRelationCustom] = useState("");
   const [advLog, setAdvLog] = useState<{role:"user"|"assistant";content:string}[]>([]);
@@ -233,9 +234,14 @@ export default function App() {
         timestamp: m.timestamp || null,
         kind: "text" as const,
       }));
+      contactRef.current = c.user;
       setSelf("我");
       setWxOpen(false);
-      if (!messages.length || other === c.name) {
+      const sameContact =
+        !messages.length ||
+        contactRef.current === c.user ||
+        (!contactRef.current && other === c.name);
+      if (sameContact) {
         if (other !== c.name) setOther(c.name);
         a.reset();
         setMessages(ms);
@@ -326,7 +332,9 @@ export default function App() {
       const saved = await loadConversation(id);
       if (!saved || saved.schema !== 1) return;
       convId.current = id;
-      setLastConvId(id);
+      contactRef.current = saved.contactId ?? "";
+      setAdvSel(new Set());
+      setAdvLog([]);
       a.cancel();
       setNotes(saved.notes ?? "");
       setRelationCustom(saved.relationLabel ?? "");
@@ -386,6 +394,7 @@ export default function App() {
         .then((list) => live && setConvs(list))
         .catch(() => {});
     const apply = (saved: SavedConversation, health: any) => {
+      contactRef.current = saved.contactId ?? "";
       setNotes(saved.notes ?? "");
       setRelationCustom(saved.relationLabel ?? "");
       setMessages(saved.messages);
@@ -456,6 +465,7 @@ export default function App() {
           modelFingerprint: a.modelFingerprint,
           notes,
           relationLabel: relationCustom,
+          contactId: contactRef.current || undefined,
         }
       : null;
     if (lastSavedMessages.current !== messages || a.status !== "loading") {
