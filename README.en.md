@@ -1,3 +1,5 @@
+> **Outdated upstream readme.** This fork is heavily customized — see [README.md](./README.md) (Chinese).
+
 # Crush Monitor
 
 [简体中文](README.md) · English
