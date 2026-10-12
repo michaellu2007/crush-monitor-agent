@@ -1258,3 +1258,8 @@ blockquote {
 .lock-overlay { position: fixed; inset: 0; background: rgba(20,32,27,.55); z-index: 60; display: flex; align-items: center; justify-content: center; }
 .lock-card { background: #fff; border-radius: 12px; padding: 20px 24px; max-width: 420px; box-shadow: 0 16px 48px rgba(0,0,0,.25); }
 .lock-card p { margin: 0 0 14px; line-height: 1.7; }
+
+.composer-progress { width: 100%; height: 6px; background: #e6eee9; border-radius: 3px; overflow: hidden; margin-bottom: 8px; flex: none; }
+.composer-progress-fill { height: 100%; background: linear-gradient(90deg, #43785c, #6fa287); border-radius: 3px; transition: width 0.4s ease; min-width: 4%; }
+.composer-progress.indeterminate .composer-progress-fill { width: 30% !important; animation: composer-indet 1.2s ease-in-out infinite; }
+@keyframes composer-indet { 0% { transform: translateX(-100%); } 100% { transform: translateX(333%); } }

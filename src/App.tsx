@@ -1026,6 +1026,27 @@ export default function App() {
             <div className="composer-bottom">
               <div className="composer-feedback">
                 <span role="status">{storageError || notice}</span>{" "}
+                {busy && (
+                  <div
+                    className={
+                      "composer-progress" +
+                      (a.progress.total ? "" : " indeterminate")
+                    }
+                    role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={a.progress.total || 100}
+                    aria-valuenow={a.progress.done}
+                  >
+                    <div
+                      className="composer-progress-fill"
+                      style={{
+                        width: a.progress.total
+                          ? `${Math.max(4, Math.round((a.progress.done / a.progress.total) * 100))}%`
+                          : "30%",
+                      }}
+                    />
+                  </div>
+                )}
                 <div className="analysis-status" aria-live="polite">
                   {busy ? (
                     <>
