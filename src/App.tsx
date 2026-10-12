@@ -157,6 +157,7 @@ export default function App() {
   );
   const [selectMode, setSelectMode] = useState(false);
   const [delConv, setDelConv] = useState<ConversationSummary | null>(null);
+  const [uiLockTaken, setUiLockTaken] = useState(false);
   const [advWidth, setAdvWidth] = useState(460);
   const advDrag = useRef<{ x: number; w: number } | null>(null);
   function startAdvDrag(e: React.MouseEvent) {
@@ -363,6 +364,27 @@ export default function App() {
     followOnAppend: true,
     scrollEndThreshold: 100,
   });
+  // 单标签守卫：第二个标签打开时提示，避免两页互相覆盖保存的数据。
+  useEffect(() => {
+    if (!("locks" in navigator)) return;
+    let release: (() => void) | null = null;
+    let cancelled = false;
+    navigator.locks
+      .request("crush-monitor-ui", { ifAvailable: true }, async (lock) => {
+        if (!lock || cancelled) {
+          if (!lock) setUiLockTaken(true);
+          return;
+        }
+        await new Promise<void>((r) => {
+          release = r;
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      release?.();
+    };
+  }, []);
   useEffect(() => {
     let live = true;
     const refreshList = () =>
@@ -656,6 +678,24 @@ export default function App() {
           ))}
         </aside>
         <section className="wechat" aria-label="微信聊天">
+          {busy && (
+            <div
+              className={"analysis-progress" + (a.progress.total ? "" : " indeterminate")}
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={a.progress.total || 100}
+              aria-valuenow={a.progress.done}
+            >
+              <div
+                className="analysis-progress-fill"
+                style={{
+                  width: a.progress.total
+                    ? `${Math.round((a.progress.done / a.progress.total) * 100)}%`
+                    : "35%",
+                }}
+              />
+            </div>
+          )}
           <header className="chat-head">
             <div className="chat-head-left">
             <div className="contact-title">
@@ -1300,6 +1340,18 @@ export default function App() {
             导入后已存在的聊天会自动增量合并（新消息才重新分析）；"重新解密并刷新"会先跑一次 chatlog 解密，把微信里最新收到的消息拉进来。
           </p>
         </Modal>
+      )}
+      {uiLockTaken && (
+        <div className="lock-overlay">
+          <div className="lock-card">
+            <p>
+              本应用已在另一个标签页打开。多开会导致两个页面互相覆盖保存的数据。
+            </p>
+            <button className="primary" onClick={() => setUiLockTaken(false)}>
+              仍要在此标签页使用
+            </button>
+          </div>
+        </div>
       )}
       {delConv && (
         <Modal title={`删除与 ${delConv.other} 的会话？`} close={() => setDelConv(null)}>

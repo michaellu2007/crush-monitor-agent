@@ -263,27 +263,40 @@ app.use(
   },
 );
 const port = Number(process.env.PORT || 3178);
-app.listen(port, process.env.HOST || "127.0.0.1", () => {
-  if (process.env.CRUSH_OPEN_BROWSER === "1") {
-    const url = `http://127.0.0.1:${port}/`;
-    if (process.platform === "win32") {
-      // Prefer Chrome when installed; fall back to the default browser.
-      const chrome = [
-        join(process.env["ProgramFiles"] ?? "", "Google/Chrome/Application/chrome.exe"),
-        join(process.env["ProgramFiles(x86)"] ?? "", "Google/Chrome/Application/chrome.exe"),
-        join(process.env.LOCALAPPDATA ?? "", "Google/Chrome/Application/chrome.exe"),
-      ].find((p) => p && existsSync(p));
-      if (chrome) execFile(chrome, [url], () => {});
-      else execFile("rundll32", ["url.dll,FileProtocolHandler", url], () => {});
-    } else {
-      execFile(process.platform === "darwin" ? "open" : "xdg-open", [url], () => {});
-    }
+const host = process.env.HOST || "127.0.0.1";
+
+function openBrowser(url: string) {
+  if (process.env.CRUSH_OPEN_BROWSER === "0") return;
+  if (process.platform === "win32") {
+    // Prefer Chrome when installed; fall back to the default browser.
+    const chrome = [
+      join(process.env["ProgramFiles"] ?? "", "Google/Chrome/Application/chrome.exe"),
+      join(process.env["ProgramFiles(x86)"] ?? "", "Google/Chrome/Application/chrome.exe"),
+      join(process.env.LOCALAPPDATA ?? "", "Google/Chrome/Application/chrome.exe"),
+    ].find((p) => p && existsSync(p));
+    if (chrome) execFile(chrome, [url], () => {});
+    else execFile("rundll32", ["url.dll,FileProtocolHandler", url], () => {});
+  } else {
+    execFile(process.platform === "darwin" ? "open" : "xdg-open", [url], () => {});
   }
+}
+
+// 单实例：端口被占用时视为已在运行，直接打开页面后退出，不再崩出堆栈。
+const server = app.listen(port, host, () => {
+  const url = `http://127.0.0.1:${port}/`;
+  openBrowser(url);
   const status = publicSettings();
-  console.log(`Crush API: http://${process.env.HOST || "127.0.0.1"}:${port}`);
+  console.log(`Crush API: http://${host}:${port}`);
   console.log(
     status.configured
       ? `Model: ${status.preset} · ${status.model} · Key configured (not yet verified)`
       : "请在网页中设置模型和 API Key。",
   );
+});
+server.on("error", (err: NodeJS.ErrnoException) => {
+  if (err.code !== "EADDRINUSE") throw err;
+  const url = `http://127.0.0.1:${port}/`;
+  console.log("crush-monitor 已在运行，为你打开页面。");
+  openBrowser(url);
+  process.exit(0);
 });
