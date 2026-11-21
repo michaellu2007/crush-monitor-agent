@@ -1,0 +1,15 @@
+{
+  "sha": "7dad93d7b55a1f801bad3be16620083d2f998599",
+  "url": "https://api.github.com/repos/sjzar/chatlog/git/trees/7dad93d7b55a1f801bad3be16620083d2f998599",
+  "tree": [
+    {
+      "path": "README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "771a090fda65e3da721a056351bba927350768d8",
+      "size": 1332,
+      "url": "https://api.github.com/repos/sjzar/chatlog/git/blobs/771a090fda65e3da721a056351bba927350768d8"
+    }
+  ],
+  "truncated": false
+}
