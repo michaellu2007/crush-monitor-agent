@@ -1,0 +1,101 @@
+node_modules/
+dist/
+release/
+.env
+.env.*
+!.env.example
+artifacts/
+
+.runtime/
+
+# ---- 本地数据与隐私（绝不上传）----
+chats/
+data/
+*.log
+
+# ---- 验收截图(会拍到真实聊天,永不入库)----
+tests/manual/*.png
+
+
+# ---- 模型与工具链（大文件）----
+*.gguf
+*.zip
+go/
+chatlog.exe
+alpha-bin/
+chatlog-src/
+chatlog_win/
+chatlog_full/
+chatlog_official/
+chatlog_alpha*.zip
+chatlog_full.tar.gz
+chatlog_official.tar.gz
+dl-ollama.sh
+masked-key.patch
+
+# ---- 个人笔记与冗余副本 ----
+10.12plan.txt
+App.original.tsx
+
+# ---- 内网信息（学校容器地址,不上传）----
+
+data/media-export/
+data/media-export-image-keys.json
+scripts/media-export/keyfinder/keyfinder.exe
+
+# ---- 微信解析工具链（本地专用，永不上传）----
+scripts/media-export/
+scripts/extract-image-key.ps1
+docs/图片与表情解密.md
+同步微信到Monitor-一次.bat
+同步微信到Monitor-常驻.bat
+
+# 微信解密数据库（绝不上传）
+db_storage/
+db_storage.old-*/
+选择要同步的联系人.bat
+
+# ZCode 计划/会话文件（含隐私）
+.zcode/
+downloads/
+
+scripts/__pycache__/
+**/__pycache__/
+
+# ---- tools/ 本地大文件与日志（模型压缩包、评测日志）----
+tools/ollama-windows.zip
+tools/*.log
+
+# tools/ 整个目录是本地工具链（ollama 解压、临时模板、运行时），一律不入库
+tools/
+glm标注/
+
+
+# ---- 容器中转目录（模型权重打包,14GB 级,绝不入库）----
+tmp-relay/
+
+# agent-lab 是本仓库的 git worktree（.git/worktrees 注册），不是子模块，不入库
+/crush-monitor-agent-lab/
+
+scripts/tmp-anno*
+scripts/tmp-write-anno*
+scripts/check-batch-anno.py
+scripts/check-baseline.ts
+scripts/check-context.ts
+scripts/mbti-*
+scripts/judge-bench*
+scripts/train/
+/temp/
+/research/
+/.workbuddy-ai/
+/docs/任务单/
+/docs/判官*
+/docs/双人对话模型调研.md
+/docs/agent上下文设计.md
+/docs/agent对话上下文管理调研.md
+/docs/回退与备份.md
+/docs/磁盘清理研究.md
+/docs/聊天策略知识库.md
+/神经信号*.md
+
+.tmp-*

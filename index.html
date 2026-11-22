@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>好感监控器</title>
+    <script>
+      // 界面主题（themeMode: auto/light/dark × styleMode: black/ink/dusk/plum/amber，照搬
+      // DeepSeek-Reasonix 外观模型）：底色恒中性（浅=白、深=中性灰黑），风格只表达在点缀色上。
+      // 首帧前挂根属性防闪白；旧版 styleMode=white 视作浅色+默认绿（ink）
+      var __themeBg = { white: "#ffffff", dark: "#0c0d10" };
+      var __s = localStorage.getItem("styleMode");
+      var __style =
+        __s === "black" || __s === "ink" || __s === "wechat" || __s === "dusk" || __s === "plum" || __s === "amber"
+          ? __s
+          : "wechat";
+      var __m = localStorage.getItem("themeMode");
+      var __modePref =
+        __m === "auto" || __m === "light" || __m === "dark"
+          ? __m
+          : __s ? (__s === "white" ? "light" : "dark") : "auto";
+      var __dark =
+        __modePref === "dark" ||
+        (__modePref === "auto" &&
+          window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches);
+      document.documentElement.dataset.style = __style;
+      document.documentElement.dataset.mode = __dark ? "dark" : "white";
+      document
+        .querySelector('meta[name="theme-color"]')
+        ?.setAttribute("content", __dark ? __themeBg.dark : __themeBg.white);
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

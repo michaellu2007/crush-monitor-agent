@@ -1,0 +1,20 @@
+// 一次性验证:打开聊天设置,改自定义关系描述,页头状态标签应实时跟随
+import { chromium } from "@playwright/test";
+const browser = await chromium.launch({ channel: "chrome" });
+const p = await browser.newPage();
+await p.goto("http://127.0.0.1:3178/");
+await p.waitForTimeout(2500);
+const before = await p.locator(".contact-title span").first().textContent();
+await p.getByRole("button", { name: "聊天设置", exact: true }).click();
+await p.getByPlaceholder(/分手后的暧昧期/).waitFor({ timeout: 8000 });
+const input = p.getByPlaceholder(/分手后的暧昧期/);
+const orig = await input.inputValue();
+await input.fill("测试临时标签XYZ");
+await p.waitForTimeout(300);
+const after = await p.locator(".contact-title span").first().textContent();
+await input.fill(orig);
+await p.waitForTimeout(300);
+const restored = await p.locator(".contact-title span").first().textContent();
+await p.keyboard.press("Escape");
+console.log(JSON.stringify({ before, after, restored }));
+await browser.close();
